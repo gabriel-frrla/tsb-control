@@ -1,0 +1,18 @@
+# Generated ROS workspace files.
+/build/
+/install/
+/log/
+
+# Experiment recordings and exported results.
+/results/
+
+# Local editor configuration.
+/.vscode/
+
+# Python cache files.
+__pycache__/
+*.pyc
+
+# Crash dumps.
+core
+core.*

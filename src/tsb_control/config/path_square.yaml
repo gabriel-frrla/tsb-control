@@ -1,0 +1,8 @@
+path_following_node:
+  ros__parameters:
+    guidance:
+      lookahead: 0.5
+
+    waypoints:
+      x: [0.0, 2.0, 2.0, 0.0, 0.0]
+      y: [0.0, 0.0, 1.5, 1.5, 0.0]

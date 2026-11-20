@@ -1,0 +1,29 @@
+pid_node:
+  ros__parameters:
+    surge:
+      kp: 0.5
+      ki: 0.0
+      kd: 0.0
+      output_min: -0.20
+      output_max: 0.20
+
+    heading:
+      kp: 1.0
+      ki: 0.0
+      kd: 0.0
+      output_min: -1.0
+      output_max: 1.0
+
+      schedule:
+        low_speed: 0.0
+        high_speed: 0.20
+
+        high:
+          kp: 1.0
+          ki: 0.0
+          kd: 0.0
+
+    control:
+      rate_hz: 20.0
+      input_timeout: 1.0
+      max_dt: 0.2

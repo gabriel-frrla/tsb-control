@@ -4,7 +4,7 @@
 
 A ROS 2 control system for a TurtleBot3 Burger in Gazebo Harmonic, combining forward-velocity and heading PID control, IMU/odometry processing, and autonomous waypoint following using Line-of-Sight (LOS) guidance.
 
-The C++ implementation includes anti-windup, velocity feedforward, heading gain scheduling, and independent algorithm tests. YAML configurations and launch files support manual control and autonumous missions.
+The C++ implementation includes anti-windup, velocity feedforward, heading gain scheduling, and independent algorithm tests. YAML configurations and launch files support manual control and autonomous missions.
 
 ## Contents
 
@@ -17,9 +17,7 @@ The C++ implementation includes anti-windup, velocity feedforward, heading gain 
 7. [Configuration reference](#configuration-reference)
 8. [Testing](#testing)
 9. [Simulation validation](#simulation-validation)
-10. [Troubleshooting](#troubleshooting)
-11. [Scope and release status](#scope-and-release-status)
-12. [References and attribution](#references-and-attribution)
+10. [References](#references)
 
 ## Packages and architecture
 
@@ -86,7 +84,7 @@ Missing or stale inputs cause the controller to publish zero velocity.
 
 For the TurtleBot simulation, Gazebo's differential-drive system converts
 these velocity commands into wheel motion. A separate allocation node for converting
-control outputs into motor-current commands, as described in the porjects documentation, is therefore not implemented
+control outputs into motor-current commands, as described in the project documentation, is therefore not implemented
 in this version.
 
 ### `sensor_processing_node`
@@ -210,30 +208,30 @@ tsb_ws/
 
 The angular wrapping operation used throughout the implementation is:
 
-$$
-\operatorname{wrap}(a)=\operatorname{atan2}(\sin a,\cos a).
-$$
+```math
+\mathrm{wrap}(a) = \mathrm{atan2}(\sin a,\cos a)
+```
 
 ### Discrete PID and anti-windup
 
 The controller errors are:
 
-$$
-e_v=v_d-v,\qquad e_\psi=\operatorname{wrap}(\psi_d-\hat\psi).
-$$
+```math
+e_{v} = v_{d} - v, \qquad e_{\psi} = \mathrm{wrap}(\psi_{d} - \hat{\psi})
+```
 
 For each controller, the proportional, the proposed integral update and the derivative contributions are:
 
-$$
- P_k=K_p e_k, \qquad I_k^*=I_{k-1}+e_k\Delta t,\qquad D_k=K_d\frac{\delta e_k}{\Delta t}.
-$$
+```math
+P_{k} = K_{p}\,e_{k}, \qquad I_{k}^{\ast} = I_{k-1} + e_{k}\,\Delta t, \qquad D_{k} = K_{d}\,\frac{\delta e_{k}}{\Delta t}
+```
 
-For surge, $\delta e_k=e_k-e_{k-1}$; for heading, that difference is wrapped. The first sample after construction or reset has zero derivative contribution.
+For surge, $`\delta e_{k}=e_{k}-e_{k-1}`$; for heading, that difference is wrapped. The first sample after construction or reset has zero derivative contribution.
 
 The proposed output is:
 
 ```math
-c_{k}^{*} = c_{\mathrm{ff}} + P_{k} + K_{i}\,I_{k}^{*} + D_{k}
+c_{k}^{\ast} = c_{\mathrm{ff}} + P_{k} + K_{i}\,I_{k}^{\ast} + D_{k}
 ```
 
 The controller first calculates the command using the proposed integral value.
@@ -248,63 +246,58 @@ the update is accepted.
 The final command is calculated using the retained or updated integral
 and clamped to the corresponding output limits.
 
-For surge, $c_{\mathrm{ff}}=v_d$ supplies the forward-velocity baseline. For heading, $c_{\mathrm{ff}}=0$. The surge feedforward term is a velocity-command baseline.
+For surge, $`c_{\mathrm{ff}}=v_{d}`$ supplies the forward-velocity baseline. For heading, $`c_{\mathrm{ff}}=0`$. The surge feedforward term is a velocity-command baseline.
 
 ### Speed-dependent heading gains
 
-The scheduling variable is $s=|v_d|$. Between the configured speed thresholds:
+The scheduling variable is $`s=|v_{d}|`$. Between the configured speed thresholds:
 
-$$
-\alpha=\operatorname{clamp}\left(\frac{s-s_l}{s_h-s_l},0,1\right),\qquad
-K(s)=(1-\alpha)K_l+\alpha K_h.
-$$
+```math
+\alpha = \mathrm{clamp}\left(\frac{s-s_{l}}{s_{h}-s_{l}},0,1\right), \qquad K(s) = (1-\alpha)K_{l} + \alpha K_{h}
+```
 
 The interpolation is applied independently to proportional, integral, and derivative gains. Outside the thresholds, the nearest endpoint gain set is selected. 
 
-When both old and new integral gains are nonzero, the stored integral is rescaled to preserve its contribution. Setting $K_i$ to zero clears the accumulated integral error. If $K_i$ is later set to a nonzero value, integration starts again from zero. Changes to $K_p$ or $K_d$ can still cause an immediate change in the control command, so gain updates are not guaranteed to produce a smooth transition.
+When both old and new integral gains are nonzero, the stored integral is rescaled to preserve its contribution. Setting $`K_{i}`$ to zero clears the accumulated integral error. If $`K_{i}`$ is later set to a nonzero value, integration starts again from zero. Changes to $`K_{p}`$ or $`K_{d}`$ can still cause an immediate change in the control command, so gain updates are not guaranteed to produce a smooth transition.
 
 ### Complementary heading estimation
 
-Odometry provides the absolute heading reference. With aligned IMU and robot axes, the yaw rate is calculated from roll $\phi$, pitch $\theta$, and body rates $q,r$:
+Odometry provides the absolute heading reference. With aligned IMU and robot axes, the yaw rate is calculated from roll $`\phi`$, pitch $`\theta`$, and body rates $`q,r`$:
 
-$$
-\dot\psi_{\mathrm{imu}}=
-\frac{\sin\phi\,q+\cos\phi\,r}{\cos\theta}.
-$$
+```math
+\dot{\psi}_{\mathrm{imu}} = \frac{\sin\phi\,q + \cos\phi\,r}{\cos\theta}
+```
 
 Measurements are rejected when the robot's pitch is too close to ±90°,
 where converting IMU angular velocity into heading rate becomes
 numerically unstable. The heading estimator initializes from the first accepted odometry heading. After initialization, the estimator predicts and corrects heading:
 
-$$
-\psi^-_k=\operatorname{wrap}(\hat\psi_{k-1}+\dot\psi_{\mathrm{imu}}\Delta t),
-$$
+```math
+\psi_{k}^{-} = \mathrm{wrap}\left(\hat{\psi}_{k-1} + \dot{\psi}_{\mathrm{imu}}\,\Delta t\right)
+```
 
-$$
-\alpha_f=e^{-\Delta t/\tau},\qquad
-\hat\psi_k=\operatorname{wrap}\left(
-\psi^-_k+(1-\alpha_f)\operatorname{wrap}(\psi_{\mathrm{odom},k}-\psi^-_k)
-\right).
-$$
+```math
+\alpha_{f} = e^{-\Delta t/\tau}, \qquad
+\hat{\psi}_{k} = \mathrm{wrap}\left(\psi_{k}^{-} + (1-\alpha_{f})\,\mathrm{wrap}\left(\psi_{\mathrm{odom},k} - \psi_{k}^{-}\right)\right)
+```
 
-A larger time constant $\tau$ gives more importance to the gyro prediction. A smaller value gives greater weight to odometry correction. The implementation uses the latest accepted IMU sample during an odometry-driven update.
+A larger time constant $`\tau`$ gives more importance to the gyro prediction. A smaller value gives greater weight to odometry correction. The implementation uses the latest accepted IMU sample during an odometry-driven update.
 
 ### LOS guidance and approach speed
 
-For a directed segment from $A$ to $B$, let $\chi$ be the segment heading, $e_\perp$ the signed cross-track error, and $\Delta d$ the lookahead distance. The desired heading is:
+For a directed segment from $`A`$ to $`B`$, let $`\chi`$ be the segment heading, $`e_{\perp}`$ the signed cross-track error, and $`\Delta d`$ the lookahead distance. The desired heading is:
 
-$$
-\psi_d=\operatorname{wrap}\left(\chi-\operatorname{atan2}(e_\perp,\Delta d)\right).
-$$
+```math
+\psi_{d} = \mathrm{wrap}\left(\chi - \mathrm{atan2}(e_{\perp},\Delta d)\right)
+```
 
 Positive cross-track error means the robot lies left of the directed segment. The heading correction steers toward the path. If the endpoint is passed without satisfying arrival, guidance directs the robot toward that endpoint.
 
-Forward speed is reduced according to heading alignment and endpoint distance $d$:
+Forward speed is reduced according to heading alignment and endpoint distance $`d`$:
 
-$$
-v_d=\min(v_{\mathrm{cruise}},k_a d)\,
-\max\left(0,\cos\operatorname{wrap}(\psi_d-\hat\psi)\right).
-$$
+```math
+v_{d} = \min(v_{\mathrm{cruise}},k_{a}\,d)\,\max\left(0,\cos\left(\mathrm{wrap}(\psi_{d}-\hat{\psi})\right)\right)
+```
 
 Entering a waypoint's acceptance radius advances the route. At the final waypoint, guidance requests zero speed and captures the current heading as its final heading reference. A closed route repeats the first coordinate at its end and completes one circuit.
 
@@ -398,7 +391,7 @@ This starts Gazebo, the bridge, sensor processing, PID control, and waypoint gui
 ## Execution workflows
 
 Source `~/tsb_ws/install/setup.bash` in every new runtime terminal.
-In this implementation, I provide 3 independent launch files. `simulation.launch.py` and `control.launch.py` were mainly used to test the Gazebo and Simulation/Nodes launches seperatly. `mission.launch.py` launches the complete pipeline.
+In this implementation, I provide 3 independent launch files. `simulation.launch.py` and `control.launch.py` were mainly used to test the Gazebo and Simulation/Nodes launches separately. `mission.launch.py` launches the complete pipeline.
 
 | Launch file | Starts |
 | --- | --- |
@@ -439,7 +432,7 @@ Terminal 2:
 ros2 topic pub --rate 10 --use-sim-time /control/reference tsb_interfaces/msg/ControlReference '{header: {stamp: now, frame_id: odom}, surge_velocity: 0.1, heading: 0.5}'
 ```
 
-This requests 0.1 m/s and a heading of 0.5 rad. Stop the publisher with Ctrl+C to exercise the reference timeout. Do not run it alongside the path follower because they both publish to the same reference topic so the it would choke!
+This requests 0.1 m/s and a heading of 0.5 rad. Stop the publisher with Ctrl+C to exercise the reference timeout. Do not run it alongside the path follower because they both publish to the same reference topic which would send competing references to the PID.
 
 ### Choose a waypoint route
 
@@ -454,7 +447,7 @@ ros2 run tsb_control path_following_node --ros-args --params-file ~/tsb_ws/insta
 | `path_following.yaml` | `(0, 0) → (2, 0) → (2, 1.5)` |
 | `path_square.yaml` | `(0, 0) → (2, 0) → (2, 1.5) → (0, 1.5) → (0, 0)` |
 
-The current mission launch loads `path_following.yaml`. The separate-node workflow supports selecting another route file. Note that since the project doesnt require PID tuning, the `path_square.yaml` mission does not execute perfectly. The mission is considered finished when the turtlebot is within the 0.15 accepttance radius from the final waypoint.
+The current mission launch loads `path_following.yaml`. The separate-node workflow supports selecting another route file. Note that since the project does not require PID tuning, the `path_square.yaml` mission does not execute perfectly. The mission is considered finished when the turtlebot is within the 0.15 m acceptance radius from the final waypoint.
 
 ### Start individual processing and control nodes
 
@@ -620,6 +613,7 @@ ctest --test-dir ~/tsb_ws/build/tsb_control \
 ```
 
 The commands share the same structure: only the test name changes.
+
 ## Simulation validation
 
 ### Validation matrix
@@ -670,13 +664,13 @@ Stopping on lost references and subsequent mission completion after restarting t
 | Corner route ending at `(2.0, 1.5)` | Final measured position approximately `(1.99832, 1.35351)`; target distance approximately 0.1465 m. |
 | Closed route ending at `(0.0, 0.0)` | Final measured position approximately `(0.00120, 0.14547)`; target distance approximately 0.1455 m. |
 | Heading gain scheduling | Logged reference/gain pairs included 0.100 m/s → 0.800, 0.086 m/s → 0.828, and 0.066 m/s → 0.868; the corner mission completed. |
-| Reference publisher stopped | PID requested zero velocity; restarting the path follower allowed mission to finnish. |
+| Reference publisher stopped | PID requested zero velocity; restarting the path follower allowed mission to finish. |
 
-For a final target $(x_g,y_g)$, endpoint distance is:
+For a final target $`(x_{g},y_{g})`$, endpoint distance is:
 
-$$
-d_{\mathrm{final}}=\sqrt{(x-x_g)^2+(y-y_g)^2}.
-$$
+```math
+d_{\mathrm{final}} = \sqrt{(x-x_{g})^{2} + (y-y_{g})^{2}}
+```
 
 Both recorded distances are within the configured 0.15 m acceptance radius.
 

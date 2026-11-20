@@ -224,9 +224,9 @@ $$
 
 For each controller, the proportional, the proposed integral update and the derivative contributions are:
 
-$$
- P_k=K_p e_k, \qquad I_k^*=I_{k-1}+e_k\Delta t,\qquad D_k=K_d\frac{\delta e_k}{\Delta t}.
-$$
+```math
+c_{k}^{*} = c_{\mathrm{ff}} + P_{k} + K_{i}\,I_{k}^{*} + D_{k}
+```
 
 For surge, $\delta e_k=e_k-e_{k-1}$; for heading, that difference is wrapped. The first sample after construction or reset has zero derivative contribution.
 

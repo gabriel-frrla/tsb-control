@@ -211,7 +211,7 @@ tsb_ws/
 The angular wrapping operation used throughout the implementation is:
 
 $$
-\operatorname{wrap}(a)=\operatorname{atan2}(\sin a,\cos a).
+\mathrm{wrap}(a)=\mathrm{atan2}(\sin a,\cos a).
 $$
 
 ### Discrete PID and anti-windup
@@ -219,7 +219,7 @@ $$
 The controller errors are:
 
 $$
-e_v=v_d-v,\qquad e_\psi=\operatorname{wrap}(\psi_d-\hat\psi).
+e_v=v_d-v,\qquad e_\psi=\mathrm{wrap}(\psi_d-\hat\psi).
 $$
 
 For each controller, the proportional, the proposed integral update and the derivative contributions are:
@@ -255,7 +255,7 @@ For surge, $c_{\mathrm{ff}}=v_d$ supplies the forward-velocity baseline. For hea
 The scheduling variable is $s=|v_d|$. Between the configured speed thresholds:
 
 $$
-\alpha=\operatorname{clamp}\left(\frac{s-s_l}{s_h-s_l},0,1\right),\qquad
+\alpha=\mathrm{clamp}\left(\frac{s-s_l}{s_h-s_l},0,1\right),\qquad
 K(s)=(1-\alpha)K_l+\alpha K_h.
 $$
 
@@ -277,13 +277,13 @@ where converting IMU angular velocity into heading rate becomes
 numerically unstable. The heading estimator initializes from the first accepted odometry heading. After initialization, the estimator predicts and corrects heading:
 
 $$
-\psi^-_k=\operatorname{wrap}(\hat\psi_{k-1}+\dot\psi_{\mathrm{imu}}\Delta t),
+\psi^-_k=\mathrm{wrap}(\hat\psi_{k-1}+\dot\psi_{\mathrm{imu}}\Delta t),
 $$
 
 $$
 \alpha_f=e^{-\Delta t/\tau},\qquad
-\hat\psi_k=\operatorname{wrap}\left(
-\psi^-_k+(1-\alpha_f)\operatorname{wrap}(\psi_{\mathrm{odom},k}-\psi^-_k)
+\hat\psi_k=\mathrm{wrap}\left(
+\psi^-_k+(1-\alpha_f)\mathrm{wrap}(\psi_{\mathrm{odom},k}-\psi^-_k)
 \right).
 $$
 
@@ -294,7 +294,7 @@ A larger time constant $\tau$ gives more importance to the gyro prediction. A sm
 For a directed segment from $A$ to $B$, let $\chi$ be the segment heading, $e_\perp$ the signed cross-track error, and $\Delta d$ the lookahead distance. The desired heading is:
 
 $$
-\psi_d=\operatorname{wrap}\left(\chi-\operatorname{atan2}(e_\perp,\Delta d)\right).
+\psi_d=\mathrm{wrap}\left(\chi-\mathrm{atan2}(e_\perp,\Delta d)\right).
 $$
 
 Positive cross-track error means the robot lies left of the directed segment. The heading correction steers toward the path. If the endpoint is passed without satisfying arrival, guidance directs the robot toward that endpoint.
@@ -303,7 +303,7 @@ Forward speed is reduced according to heading alignment and endpoint distance $d
 
 $$
 v_d=\min(v_{\mathrm{cruise}},k_a d)\,
-\max\left(0,\cos\operatorname{wrap}(\psi_d-\hat\psi)\right).
+\max\left(0,\cos\mathrm{wrap}(\psi_d-\hat\psi)\right).
 $$
 
 Entering a waypoint's acceptance radius advances the route. At the final waypoint, guidance requests zero speed and captures the current heading as its final heading reference. A closed route repeats the first coordinate at its end and completes one circuit.
